@@ -103,7 +103,6 @@ class SamSession(BaseSession):
         self,
         model_name: str,
         sess_opts: ort.SessionOptions,
-        providers=None,
         *args,
         **kwargs,
     ):
@@ -118,16 +117,7 @@ class SamSession(BaseSession):
             **kwargs: Arbitrary keyword arguments.
         """
         self.model_name = model_name
-
-        valid_providers = []
-        available_providers = ort.get_available_providers()
-
-        for provider in providers or []:
-            if provider in available_providers:
-                valid_providers.append(provider)
-        else:
-            valid_providers.extend(available_providers)
-
+        valid_providers = ort.get_available_providers()
         paths = self.__class__.download_models(*args, **kwargs)
         self.encoder = ort.InferenceSession(
             str(paths[0]),
@@ -178,34 +168,22 @@ class SamSession(BaseSession):
         img = img.convert("RGB")
         cv_image = np.array(img)
         original_size = cv_image.shape[:2]
-
         scale_x = input_size[1] / cv_image.shape[1]
         scale_y = input_size[0] / cv_image.shape[0]
         scale = min(scale_x, scale_y)
-
-        transform_matrix = np.array(
-            [
-                [scale, 0, 0],
-                [0, scale, 0],
-                [0, 0, 1],
-            ]
-        )
-
+        transform_matrix = np.array([[scale, 0, 0], [0, scale, 0], [0, 0, 1]])
         cv_image = cv2.warpAffine(
             cv_image,
             transform_matrix[:2],
             (input_size[1], input_size[0]),
             flags=cv2.INTER_LINEAR,
         )
-
         # encoder
         encoder_inputs = {
             encoder_input_name: cv_image.astype(np.float32),
         }
-
         encoder_output = self.encoder.run(None, encoder_inputs)
         image_embedding = encoder_output[0]
-
         # embedding = {
         #     "image_embedding": image_embedding,
         #     "original_size": original_size,
@@ -217,13 +195,11 @@ class SamSession(BaseSession):
         onnx_coord = np.concatenate(
             [input_points, np.array([[0.0, 0.0]])], axis=0
         )[None, :, :]
-        onnx_label = np.concatenate([input_labels, np.array([-1])], axis=0)[
-            None, :
-        ].astype(np.float32)
+        onnx_label = np.concatenate([input_labels, np.array([-1])],
+                                    axis=0)[None, :].astype(np.float32)
         onnx_coord = apply_coords(onnx_coord, input_size, target_size).astype(
             np.float32
         )
-
         onnx_coord = np.concatenate(
             [
                 onnx_coord,
@@ -233,10 +209,8 @@ class SamSession(BaseSession):
         )
         onnx_coord = np.matmul(onnx_coord, transform_matrix.T)
         onnx_coord = onnx_coord[:, :, :2].astype(np.float32)
-
         onnx_mask_input = np.zeros((1, 1, 256, 256), dtype=np.float32)
         onnx_has_mask_input = np.zeros(1, dtype=np.float32)
-
         decoder_inputs = {
             "image_embeddings": image_embedding,
             "point_coords": onnx_coord,
@@ -245,7 +219,6 @@ class SamSession(BaseSession):
             "has_mask_input": onnx_has_mask_input,
             "orig_im_size": np.array(input_size, dtype=np.float32),
         }
-
         masks, _, _ = self.decoder.run(None, decoder_inputs)
         inv_transform_matrix = np.linalg.inv(transform_matrix)
         masks = transform_masks(masks, original_size, inv_transform_matrix)
@@ -253,7 +226,6 @@ class SamSession(BaseSession):
         mask = np.zeros((masks.shape[2], masks.shape[3], 3), dtype=np.uint8)
         for m in masks[0, :, :, :]:
             mask[m > 0.0] = [255, 255, 255]
-
         return [Image.fromarray(mask).convert("L")]
 
     @classmethod

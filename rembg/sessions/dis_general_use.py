@@ -28,18 +28,12 @@ class DisSession(BaseSession):
             self.normalize(img, (0.485, 0.456, 0.406), (1.0, 1.0, 1.0),
                            (1024, 1024)),
         )
-
         pred = ort_outs[0][:, 0, :, :]
-
-        ma = np.max(pred)
-        mi = np.min(pred)
-
+        ma, mi = np.max(pred), np.min(pred)
         pred = (pred - mi) / (ma - mi)
         pred = np.squeeze(pred)
-
         mask = Image.fromarray((pred * 255).astype("uint8"), mode="L")
         mask = mask.resize(img.size, Image.Resampling.LANCZOS)
-
         return [mask]
 
     @classmethod
