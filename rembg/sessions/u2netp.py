@@ -1,8 +1,6 @@
 import os
-from typing import List
 
 import numpy as np
-import pooch
 from PIL import Image
 from PIL.Image import Image as PILImage
 
@@ -12,7 +10,7 @@ from .base import BaseSession
 class U2netpSession(BaseSession):
     """This class represents a session for using the U2netp model."""
 
-    def predict(self, img: PILImage, *args, **kwargs) -> List[PILImage]:
+    def predict(self, img: PILImage, *args, **kwargs) -> list[PILImage]:
         """
         Predicts the mask for the given image using the U2netp model.
 
@@ -51,18 +49,6 @@ class U2netpSession(BaseSession):
             str: The path to the downloaded model.
         """
         fname = f"{cls.name(*args, **kwargs)}.onnx"
-        pooch.retrieve(
-            "https://github.com/danielgatis/rembg/releases/download/v0.0.0/u2netp.onnx",
-            (
-                None
-                if cls.checksum_disabled(*args, **kwargs)
-                else "md5:8e83ca70e441ab06c318d82300c84806"
-            ),
-            fname=fname,
-            path=cls.u2net_home(*args, **kwargs),
-            progressbar=True,
-        )
-
         return os.path.join(cls.u2net_home(*args, **kwargs), fname)
 
     @classmethod

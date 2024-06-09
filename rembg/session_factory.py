@@ -14,10 +14,12 @@ def new_session(
     """
     Create a new session object based on the specified model name.
 
-    This function searches for the session class based on the model name in the 'sessions_class' list.
-    It then creates an instance of the session class with the provided arguments.
-    The 'sess_opts' object is created using the 'ort.SessionOptions()' constructor.
-    If the 'OMP_NUM_THREADS' environment variable is set, the 'inter_op_num_threads' option of 'sess_opts' is set to its value.
+    This function searches for the session class based on the model name in
+    the 'sessions_class' list. It then creates an instance of the session class
+    with the provided arguments. The 'sess_opts' object is created using the
+    'ort.SessionOptions()' constructor. If the 'OMP_NUM_THREADS' environment
+    variable is set, the 'inter_op_num_threads' option of 'sess_opts' is set
+    to its value.
 
     Parameters:
         model_name (str): The name of the model.

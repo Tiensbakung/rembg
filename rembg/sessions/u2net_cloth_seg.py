@@ -1,8 +1,6 @@
 import os
-from typing import List
 
 import numpy as np
-import pooch
 from PIL import Image
 from PIL.Image import Image as PILImage
 from scipy.special import log_softmax
@@ -56,14 +54,17 @@ palette3 = [
 
 
 class Unet2ClothSession(BaseSession):
-    def predict(self, img: PILImage, *args, **kwargs) -> List[PILImage]:
+    def predict(self, img: PILImage, *args, **kwargs) -> list[PILImage]:
         """
         Predict the cloth category of an image.
 
-        This method takes an image as input and predicts the cloth category of the image.
-        The method uses the inner_session to make predictions using a pre-trained model.
-        The predicted mask is then converted to an image and resized to match the size of the input image.
-        Depending on the cloth category specified in the method arguments, the method applies different color palettes to the mask and appends the resulting images to a list.
+        This method takes an image as input and predicts the cloth category of
+        the image. The method uses the inner_session to make predictions using
+        a pre-trained model. The predicted mask is then converted to an image
+        and resized to match the size of the input image. Depending on the
+        cloth category specified in the method arguments, the method applies
+        different color palettes to the mask and appends the resulting images
+        to a list.
 
         Parameters:
             img (PILImage): The input image.
@@ -71,7 +72,7 @@ class Unet2ClothSession(BaseSession):
             **kwargs: Additional keyword arguments.
 
         Returns:
-            List[PILImage]: A list of images representing the predicted masks.
+            list[PILImage]: A list of images representing the predicted masks.
         """
         ort_outs = self.inner_session.run(
             None,
@@ -127,18 +128,6 @@ class Unet2ClothSession(BaseSession):
     @classmethod
     def download_models(cls, *args, **kwargs):
         fname = f"{cls.name(*args, **kwargs)}.onnx"
-        pooch.retrieve(
-            "https://github.com/danielgatis/rembg/releases/download/v0.0.0/u2net_cloth_seg.onnx",
-            (
-                None
-                if cls.checksum_disabled(*args, **kwargs)
-                else "md5:2434d1f3cb744e0e49386c906e5a08bb"
-            ),
-            fname=fname,
-            path=cls.u2net_home(*args, **kwargs),
-            progressbar=True,
-        )
-
         return os.path.join(cls.u2net_home(*args, **kwargs), fname)
 
     @classmethod

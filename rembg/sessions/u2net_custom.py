@@ -1,9 +1,7 @@
 import os
-from typing import List
 
 import numpy as np
 import onnxruntime as ort
-import pooch
 from PIL import Image
 from PIL.Image import Image as PILImage
 
@@ -40,7 +38,7 @@ class U2netCustomSession(BaseSession):
 
         super().__init__(model_name, sess_opts, providers, *args, **kwargs)
 
-    def predict(self, img: PILImage, *args, **kwargs) -> List[PILImage]:
+    def predict(self, img: PILImage, *args, **kwargs) -> list[PILImage]:
         """
         Predict the segmentation mask for the input image.
 
@@ -50,7 +48,8 @@ class U2netCustomSession(BaseSession):
             **kwargs: Additional keyword arguments.
 
         Returns:
-            List[PILImage]: A list of PILImage objects representing the segmentation mask.
+            list[PILImage]: A list of PILImage objects representing the
+        segmentation mask.
         """
         ort_outs = self.inner_session.run(
             None,

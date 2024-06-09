@@ -1,6 +1,6 @@
 import io
 from enum import Enum
-from typing import Any, List, Optional, Tuple, Union, cast
+from typing import Any, Optional, cast
 
 import numpy as np
 import onnxruntime as ort
@@ -44,13 +44,14 @@ def alpha_matting_cutout(
     """
     Perform alpha matting on an image using a given mask and threshold values.
 
-    This function takes a PIL image `img` and a PIL image `mask` as input, along with
-    the `foreground_threshold` and `background_threshold` values used to determine
-    foreground and background pixels. The `erode_structure_size` parameter specifies
-    the size of the erosion structure to be applied to the mask.
+    This function takes a PIL image `img` and a PIL image `mask` as input,
+    along with the `foreground_threshold` and `background_threshold` values
+    used to determine foreground and background pixels. The
+    `erode_structure_size` parameter specifies the size of the erosion
+    structure to be applied to the mask.
 
-    The function returns a PIL image representing the cutout of the foreground object
-    from the original image.
+    The function returns a PIL image representing the cutout of the foreground
+    object from the original image.
     """
     if img.mode == "RGBA" or img.mode == "CMYK":
         img = img.convert("RGB")
@@ -63,12 +64,13 @@ def alpha_matting_cutout(
 
     structure = None
     if erode_structure_size > 0:
-        structure = np.ones(
-            (erode_structure_size, erode_structure_size), dtype=np.uint8
-        )
+        structure = np.ones((erode_structure_size, erode_structure_size),
+                            dtype=np.uint8)
 
     is_foreground = binary_erosion(is_foreground, structure=structure)
-    is_background = binary_erosion(is_background, structure=structure, border_value=1)
+    is_background = binary_erosion(is_background,
+                                   structure=structure,
+                                   border_value=1)
 
     trimap = np.full(mask_array.shape, dtype=np.uint8, fill_value=128)
     trimap[is_foreground] = 255
@@ -118,7 +120,7 @@ def putalpha_cutout(img: PILImage, mask: PILImage) -> PILImage:
     return img
 
 
-def get_concat_v_multi(imgs: List[PILImage]) -> PILImage:
+def get_concat_v_multi(imgs: list[PILImage]) -> PILImage:
     """
     Concatenate multiple images vertically.
 
@@ -140,7 +142,8 @@ def get_concat_v(img1: PILImage, img2: PILImage) -> PILImage:
 
     Args:
         img1 (PILImage): The first image.
-        img2 (PILImage): The second image to be concatenated below the first image.
+        img2 (PILImage): The second image to be concatenated below the first
+    image.
 
     Returns:
         PILImage: The concatenated image.
@@ -153,18 +156,23 @@ def get_concat_v(img1: PILImage, img2: PILImage) -> PILImage:
 
 def post_process(mask: np.ndarray) -> np.ndarray:
     """
-    Post Process the mask for a smooth boundary by applying Morphological Operations
-    Research based on paper: https://www.sciencedirect.com/science/article/pii/S2352914821000757
+    Post Process the mask for a smooth boundary by applying Morphological
+    Operations Research based on paper:
+    https://www.sciencedirect.com/science/article/pii/S2352914821000757
     args:
         mask: Binary Numpy Mask
     """
     mask = morphologyEx(mask, MORPH_OPEN, kernel)
-    mask = GaussianBlur(mask, (5, 5), sigmaX=2, sigmaY=2, borderType=BORDER_DEFAULT)
+    mask = GaussianBlur(mask, (5, 5),
+                        sigmaX=2,
+                        sigmaY=2,
+                        borderType=BORDER_DEFAULT)
     mask = np.where(mask < 127, 0, 255).astype(np.uint8)  # type: ignore
     return mask
 
 
-def apply_background_color(img: PILImage, color: Tuple[int, int, int, int]) -> PILImage:
+def apply_background_color(img: PILImage,
+                           color: (int, int, int, int)) -> PILImage:
     """
     Apply the specified background color to the image.
 
@@ -203,39 +211,56 @@ def download_models() -> None:
         session.download_models()
 
 
-def remove(
-    data: Union[bytes, PILImage, np.ndarray],
-    alpha_matting: bool = False,
-    alpha_matting_foreground_threshold: int = 240,
-    alpha_matting_background_threshold: int = 10,
-    alpha_matting_erode_size: int = 10,
-    session: Optional[BaseSession] = None,
-    only_mask: bool = False,
-    post_process_mask: bool = False,
-    bgcolor: Optional[Tuple[int, int, int, int]] = None,
-    *args: Optional[Any],
-    **kwargs: Optional[Any]
-) -> Union[bytes, PILImage, np.ndarray]:
+def remove(data: bytes | PILImage | np.ndarray,
+           alpha_matting: bool = False,
+           alpha_matting_foreground_threshold: int = 240,
+           alpha_matting_background_threshold: int = 10,
+           alpha_matting_erode_size: int = 10,
+           session: BaseSession | None = None,
+           only_mask: bool = False,
+           post_process_mask: bool = False,
+           bgcolor: tuple[int, int, int, int] | None = None,
+           *args: Optional[Any],
+           **kwargs: Optional[Any]) -> bytes | PILImage | np.ndarray:
     """
     Remove the background from an input image.
 
-    This function takes in various parameters and returns a modified version of the input image with the background removed. The function can handle input data in the form of bytes, a PIL image, or a numpy array. The function first checks the type of the input data and converts it to a PIL image if necessary. It then fixes the orientation of the image and proceeds to perform background removal using the 'u2net' model. The result is a list of binary masks representing the foreground objects in the image. These masks are post-processed and combined to create a final cutout image. If a background color is provided, it is applied to the cutout image. The function returns the resulting cutout image in the format specified by the input 'return_type' parameter.
+    This function takes in various parameters and returns a modified version of
+    the input image with the background removed. The function can handle input
+    data in the form of bytes, a PIL image, or a numpy array. The function
+    first checks the type of the input data and converts it to a PIL image if
+    necessary. It then fixes the orientation of the image and proceeds to
+    perform background removal using the 'u2net' model. The result is a list of
+    binary masks representing the foreground objects in the image. These masks
+    are post-processed and combined to create a final cutout image. If a
+    background color is provided, it is applied to the cutout image. The
+    function returns the resulting cutout image in the format specified by the
+    input 'return_type' parameter.
 
     Parameters:
         data (Union[bytes, PILImage, np.ndarray]): The input image data.
-        alpha_matting (bool, optional): Flag indicating whether to use alpha matting. Defaults to False.
-        alpha_matting_foreground_threshold (int, optional): Foreground threshold for alpha matting. Defaults to 240.
-        alpha_matting_background_threshold (int, optional): Background threshold for alpha matting. Defaults to 10.
-        alpha_matting_erode_size (int, optional): Erosion size for alpha matting. Defaults to 10.
-        session (Optional[BaseSession], optional): A session object for the 'u2net' model. Defaults to None.
-        only_mask (bool, optional): Flag indicating whether to return only the binary masks. Defaults to False.
-        post_process_mask (bool, optional): Flag indicating whether to post-process the masks. Defaults to False.
-        bgcolor (Optional[Tuple[int, int, int, int]], optional): Background color for the cutout image. Defaults to None.
+        alpha_matting (bool, optional): Flag indicating whether to use alpha
+    matting. Defaults to False.
+        alpha_matting_foreground_threshold (int, optional):
+            Foreground threshold for alpha matting. Defaults to 240.
+        alpha_matting_background_threshold (int, optional):
+            Background threshold for alpha matting. Defaults to 10.
+        alpha_matting_erode_size (int, optional):
+            Erosion size for alpha matting. Defaults to 10.
+        session (Optional[BaseSession], optional):
+            A session object for the 'u2net' model. Defaults to None.
+        only_mask (bool, optional): Flag indicating whether to return only the
+    binary masks. Defaults to False.
+        post_process_mask (bool, optional): Flag indicating whether to
+    post-process the masks. Defaults to False.
+        bgcolor (Optional[Tuple[int, int, int, int]], optional):
+            Background color for the cutout image. Defaults to None.
         *args (Optional[Any]): Additional positional arguments.
         **kwargs (Optional[Any]): Additional keyword arguments.
 
     Returns:
-        Union[bytes, PILImage, np.ndarray]: The cutout image with the background removed.
+        Union[bytes, PILImage, np.ndarray]: The cutout image with the
+    background removed.
     """
     if isinstance(data, PILImage):
         return_type = ReturnType.PILLOW

@@ -1,8 +1,6 @@
 import os
-from typing import List
 
 import numpy as np
-import pooch
 from PIL import Image
 from PIL.Image import Image as PILImage
 
@@ -14,7 +12,7 @@ class DisSession(BaseSession):
     This class represents a session for object detection.
     """
 
-    def predict(self, img: PILImage, *args, **kwargs) -> List[PILImage]:
+    def predict(self, img: PILImage, *args, **kwargs) -> list[PILImage]:
         """
         Use a pre-trained model to predict the object in the given image.
 
@@ -28,7 +26,8 @@ class DisSession(BaseSession):
         """
         ort_outs = self.inner_session.run(
             None,
-            self.normalize(img, (0.485, 0.456, 0.406), (1.0, 1.0, 1.0), (1024, 1024)),
+            self.normalize(img, (0.485, 0.456, 0.406), (1.0, 1.0, 1.0),
+                           (1024, 1024)),
         )
 
         pred = ort_outs[0][:, 0, :, :]
@@ -57,18 +56,6 @@ class DisSession(BaseSession):
             str: The path of the downloaded model file.
         """
         fname = f"{cls.name(*args, **kwargs)}.onnx"
-        pooch.retrieve(
-            "https://github.com/danielgatis/rembg/releases/download/v0.0.0/isnet-anime.onnx",
-            (
-                None
-                if cls.checksum_disabled(*args, **kwargs)
-                else "md5:6f184e756bb3bd901c8849220a83e38e"
-            ),
-            fname=fname,
-            path=cls.u2net_home(*args, **kwargs),
-            progressbar=True,
-        )
-
         return os.path.join(cls.u2net_home(*args, **kwargs), fname)
 
     @classmethod
