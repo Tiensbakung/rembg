@@ -1,5 +1,4 @@
 import os
-from typing import Dict, List, Tuple
 
 import numpy as np
 import onnxruntime as ort
@@ -8,29 +7,19 @@ from PIL.Image import Image as PILImage
 
 
 class BaseSession:
-    """This is a base class for managing a session with a machine learning model."""
+    """This is a base class for managing a session with a machine learning
+    model."""
 
     def __init__(
         self,
         model_name: str,
         sess_opts: ort.SessionOptions,
-        providers=None,
         *args,
         **kwargs
     ):
         """Initialize an instance of the BaseSession class."""
         self.model_name = model_name
-
-        self.providers = []
-
-        _providers = ort.get_available_providers()
-        if providers:
-            for provider in providers:
-                if provider in _providers:
-                    self.providers.append(provider)
-        else:
-            self.providers.extend(_providers)
-
+        self.providers = ort.get_available_providers()
         self.inner_session = ort.InferenceSession(
             str(self.__class__.download_models(*args, **kwargs)),
             providers=self.providers,
@@ -40,12 +29,12 @@ class BaseSession:
     def normalize(
         self,
         img: PILImage,
-        mean: Tuple[float, float, float],
-        std: Tuple[float, float, float],
-        size: Tuple[int, int],
+        mean: tuple[float, float, float],
+        std: tuple[float, float, float],
+        size: tuple[int, int],
         *args,
         **kwargs
-    ) -> Dict[str, np.ndarray]:
+    ) -> dict[str, np.ndarray]:
         im = img.convert("RGB").resize(size, Image.Resampling.LANCZOS)
 
         im_ary = np.array(im)
@@ -64,7 +53,7 @@ class BaseSession:
             .astype(np.float32)
         }
 
-    def predict(self, img: PILImage, *args, **kwargs) -> List[PILImage]:
+    def predict(self, img: PILImage, *args, **kwargs) -> list[PILImage]:
         raise NotImplementedError
 
     @classmethod
