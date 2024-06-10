@@ -47,11 +47,8 @@ class BaseSession:
 
         tmpImg = tmpImg.transpose((2, 0, 1))
 
-        return {
-            self.inner_session.get_inputs()[0]
-            .name: np.expand_dims(tmpImg, 0)
-            .astype(np.float32)
-        }
+        name = self.inner_session.get_inputs()[0].name
+        return {name: np.expand_dims(tmpImg, 0).astype(np.float32)}
 
     def predict(self, img: PILImage, *args, **kwargs) -> list[PILImage]:
         raise NotImplementedError

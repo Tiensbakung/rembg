@@ -238,8 +238,7 @@ def remove(data: PILImage,
         **kwargs (Optional[Any]): Additional keyword arguments.
 
     Returns:
-        Union[bytes, PILImage, np.ndarray]: The cutout image with the
-    background removed.
+        PILImage: The cutout image with the background removed.
     """
     putalpha = kwargs.pop("putalpha", False)
     # Fix image orientation

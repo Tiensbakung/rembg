@@ -34,7 +34,6 @@ def get_preprocess_shape(oldh: int, oldw: int, long_side_length: int):
     newh, neww = oldh * scale, oldw * scale
     neww = int(neww + 0.5)
     newh = int(newh + 0.5)
-
     return (newh, neww)
 
 
@@ -43,18 +42,15 @@ def apply_coords(coords: np.ndarray, original_size, target_length):
     new_h, new_w = get_preprocess_shape(
         original_size[0], original_size[1], target_length
     )
-
     coords = deepcopy(coords).astype(float)
     coords[..., 0] = coords[..., 0] * (new_w / old_w)
     coords[..., 1] = coords[..., 1] * (new_h / old_h)
-
     return coords
 
 
 def get_input_points(prompt):
     points = []
     labels = []
-
     for mark in prompt:
         if mark["type"] == "point":
             points.append(mark["data"])
@@ -64,14 +60,12 @@ def get_input_points(prompt):
             points.append([mark["data"][2], mark["data"][3]])
             labels.append(2)
             labels.append(3)
-
     points, labels = np.array(points), np.array(labels)
     return points, labels
 
 
 def transform_masks(masks, original_size, transform_matrix):
     output_masks = []
-
     for batch in range(masks.shape[0]):
         batch_masks = []
         for mask_id in range(masks.shape[1]):
@@ -84,7 +78,6 @@ def transform_masks(masks, original_size, transform_matrix):
             )
             batch_masks.append(mask)
         output_masks.append(batch_masks)
-
     return np.array(output_masks)
 
 
@@ -130,12 +123,7 @@ class SamSession(BaseSession):
             sess_options=sess_opts,
         )
 
-    def predict(
-        self,
-        img: PILImage,
-        *args,
-        **kwargs,
-    ) -> list[PILImage]:
+    def predict(self, img: PILImage, *args, **kwargs,) -> list[PILImage]:
         """
         Predict masks for an input image.
 
@@ -160,11 +148,9 @@ class SamSession(BaseSession):
         """
         prompt = kwargs.get("sam_prompt", "{}")
         # validator.validate(prompt)
-
         target_size = 1024
         input_size = (684, 1024)
         encoder_input_name = self.encoder.get_inputs()[0].name
-
         img = img.convert("RGB")
         cv_image = np.array(img)
         original_size = cv_image.shape[:2]
@@ -189,7 +175,6 @@ class SamSession(BaseSession):
         #     "original_size": original_size,
         #     "transform_matrix": transform_matrix,
         # }
-
         # decoder
         input_points, input_labels = get_input_points(prompt)
         onnx_coord = np.concatenate(
@@ -249,14 +234,11 @@ class SamSession(BaseSession):
         """
         model_name = kwargs.get("sam_model", "sam_vit_b_01ec64")
         quant = kwargs.get("sam_quant", False)
-
         fname_encoder = f"{model_name}.encoder.onnx"
         fname_decoder = f"{model_name}.decoder.onnx"
-
         if quant:
             fname_encoder = f"{model_name}.encoder.quant.onnx"
             fname_decoder = f"{model_name}.decoder.quant.onnx"
-
         return (
             os.path.join(cls.u2net_home(*args, **kwargs), fname_encoder),
             os.path.join(cls.u2net_home(*args, **kwargs), fname_decoder),
