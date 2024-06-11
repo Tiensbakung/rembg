@@ -201,7 +201,6 @@ def remove(data: PILImage,
            alpha_matting_foreground_threshold: int = 240,
            alpha_matting_background_threshold: int = 10,
            alpha_matting_erode_size: int = 10,
-           only_mask: bool = False,
            post_process_mask: bool = False,
            bgcolor: tuple[int, int, int, int] | None = None,
            *args: Optional[Any],
@@ -228,8 +227,6 @@ def remove(data: PILImage,
         alpha_matting_erode_size (int, optional):
             Erosion size for alpha matting. Defaults to 10.
         session (BaseSession): A session object for the 'u2net' model.
-        only_mask (bool, optional): Flag indicating whether to return only the
-    binary masks. Defaults to False.
         post_process_mask (bool, optional): Flag indicating whether to
     post-process the masks. Defaults to False.
         bgcolor (Optional[Tuple[int, int, int, int]], optional):
@@ -245,15 +242,15 @@ def remove(data: PILImage,
     img = fix_image_orientation(data)
     masks = session.predict(img, *args, **kwargs)
     cutouts = []
-
     for mask in masks:
         if post_process_mask:
             mask = Image.fromarray(post_process(np.array(mask)))
-
-        if only_mask:
-            cutout = mask
-        elif alpha_matting:
-            try:
+        try:
+            if putalpha:
+                cutout = putalpha_cutout(img, mask)
+            else:
+                cutout = naive_cutout(img, mask)
+            if alpha_matting:
                 cutout = alpha_matting_cutout(
                     img,
                     mask,
@@ -261,16 +258,12 @@ def remove(data: PILImage,
                     alpha_matting_background_threshold,
                     alpha_matting_erode_size,
                 )
-            except ValueError:
-                cutout = (putalpha_cutout(img, mask) if putalpha
-                          else naive_cutout(img, mask))
-        else:
-            cutout = (putalpha_cutout(img, mask) if putalpha
-                      else naive_cutout(img, mask))
+        except ValueError:
+            pass
         cutouts.append(cutout)
     cutout = img
     if len(cutouts) > 0:
         cutout = get_concat_v_multi(cutouts)
-    if bgcolor is not None and not only_mask:
+    if bgcolor is not None:
         cutout = apply_background_color(cutout, bgcolor)
     return cutout
